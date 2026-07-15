@@ -1,0 +1,9 @@
+{% for msg in messages %}
+<div class="chat-message chat-{{ msg.role }}">
+  <div class="chat-role">{% if msg.role == 'user' %}Siz{% else %}Asistan{% endif %}</div>
+  <div class="chat-text">{{ msg.message|linebreaksbr }}</div>
+  <div class="chat-time">{{ msg.created_at|date:"d.m.Y H:i" }}</div>
+</div>
+{% empty %}
+<div class="empty-state chat-empty">Henüz mesaj yok. Bir soru sorarak başlayın.</div>
+{% endfor %}

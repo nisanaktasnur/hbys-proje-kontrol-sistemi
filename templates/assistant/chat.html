@@ -1,0 +1,53 @@
+{% extends "app_base.html" %}
+{% block title %}Yapay Zekâ Proje Asistanı — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Yapay Zekâ Proje Asistanı</h2>
+  <p>Mevcut proje verileri üzerinden soru sorun ve karar desteği alın.</p>
+</div>
+
+<p class="ai-note">Yanıtlar mevcut proje kayıtları ve yapılandırılmış karar kuralları temel alınarak oluşturulur.</p>
+
+<div class="chat-layout" x-data="{ loading: false, question: '' }">
+  <div class="chat-suggestions">
+    <p class="form-label">Önerilen Sorular</p>
+    <div class="suggestion-buttons">
+      {% for q in suggested_questions %}
+      <button type="button" class="btn btn-secondary btn-sm" @click="question='{{ q|escapejs }}'">{{ q }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="chat-panel card">
+    <div class="card-header chat-header">
+      <span>Sohbet</span>
+      <div class="chat-header-actions">
+        <form method="post" action="{% url 'assistant:new' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-sm">Yeni Sohbet</button>
+        </form>
+        <form method="post" action="{% url 'assistant:clear' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-sm">Sohbeti Temizle</button>
+        </form>
+      </div>
+    </div>
+    <div id="message-list" class="chat-messages">
+      {% include "assistant/partials/message_list.html" %}
+    </div>
+    <form class="chat-input"
+          hx-post="{% url 'assistant:send' %}"
+          hx-target="#message-list"
+          hx-swap="innerHTML"
+          @htmx:before-request="loading=true"
+          @htmx:after-request="loading=false; question=''">
+      {% csrf_token %}
+      <input type="text" name="question" x-model="question" class="form-control" placeholder="Sorunuzu yazın..." required>
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        <span x-show="!loading">Gönder</span>
+        <span x-show="loading">Yanıtlanıyor...</span>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

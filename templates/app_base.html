@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>HBYS Proje Kontrol Sistemi</h1>
+      <p>Proje Karar Destek Platformu</p>
+    </div>
+    {% if membership %}
+    <div class="sidebar-user">
+      <div class="label">Oturum Açan</div>
+      <div><strong>{% if request.user.profile %}{{ request.user.profile.full_name }}{% else %}{{ request.user.username }}{% endif %}</strong></div>
+      <div class="label" style="margin-top:.25rem;">{{ membership.role }}</div>
+      {% if role_description %}<div class="label" style="margin-top:.35rem;font-size:.78rem;">{{ role_description }}</div>{% endif %}
+    </div>
+    <nav class="sidebar-nav">
+      {% for url_name, label in nav_items %}
+      <a href="{% url url_name %}" class="{% if current_nav == url_name %}active{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-footer">
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary" style="width:100%;text-align:center;">Çıkış Yap</button>
+      </form>
+    </div>
+    {% endif %}
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;">
+        {% if accessible_organizations|length > 1 %}
+        <form method="post" id="topbar-org-form" style="display:flex;gap:.5rem;align-items:center;">
+          {% csrf_token %}
+          <label style="font-size:.8125rem;color:var(--text-secondary);">Kurum</label>
+          <select class="form-control" style="margin:0;min-width:11rem;font-size:.8125rem;" onchange="var f=document.getElementById('topbar-org-form');f.action='{% url 'projects:set_active_organization' 0 %}'.replace('/0/','/'+this.value+'/');f.submit();">
+            {% for org in accessible_organizations %}
+            <option value="{{ org.id }}" {% if active_organization.id == org.id %}selected{% endif %}>{{ org.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        {% elif active_organization %}
+        <span style="font-size:.875rem;color:var(--text-secondary);">Kurum: <strong>{{ active_organization.name }}</strong></span>
+        {% endif %}
+        {% if accessible_projects|length > 1 %}
+        <form method="post" id="topbar-project-form" style="display:flex;gap:.5rem;align-items:center;">
+          {% csrf_token %}
+          <label style="font-size:.8125rem;color:var(--text-secondary);">Proje</label>
+          <select class="form-control" style="margin:0;min-width:11rem;font-size:.8125rem;" onchange="var f=document.getElementById('topbar-project-form');f.action='{% url 'projects:set_project' 0 %}'.replace('/0/','/'+this.value+'/');f.submit();">
+            {% for proj in accessible_projects %}
+            <option value="{{ proj.id }}" {% if active_project and active_project.id == proj.id %}selected{% endif %}>{{ proj.name }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        {% elif active_project %}
+        <span style="font-size:.875rem;color:var(--text-secondary);">Proje: <strong>{{ active_project.name }}</strong></span>
+        {% endif %}
+      </div>
+    </header>
+    <main class="content">
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

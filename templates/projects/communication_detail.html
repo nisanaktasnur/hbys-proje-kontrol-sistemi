@@ -1,0 +1,135 @@
+{% extends "app_base.html" %}
+{% block title %}İletişim Detayı — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+<div class="page-header">
+  <p><a href="{% url 'projects:communication_center' %}">← Proje İletişim Merkezi</a></p>
+  <h2>İletişim Detayı</h2>
+</div>
+
+<div class="card">
+  <div class="card-header">{{ communication.communication_type }} — {{ communication.title }}</div>
+  <div class="card-body">
+    <dl class="detail-list">
+      <dt>Tür</dt><dd>{{ communication.communication_type }}</dd>
+      <dt>Başlık</dt><dd>{{ communication.title }}</dd>
+      <dt>Açıklama</dt><dd>{{ communication.description|linebreaksbr }}</dd>
+      <dt>Gönderen</dt>
+      <dd>{% if communication.sender %}{% if communication.sender.profile %}{{ communication.sender.profile.full_name }}{% else %}{{ communication.sender.username }}{% endif %}{% else %}—{% endif %}</dd>
+      <dt>Alıcı</dt>
+      <dd>{% if communication.recipient_user %}{{ communication.recipient_user.username }}{% elif communication.recipient_role %}{{ communication.recipient_role }}{% else %}—{% endif %}</dd>
+      <dt>Kurum / Proje</dt><dd>{{ communication.project.organization.name }} / {{ communication.project.name }}</dd>
+      {% if communication.related_request %}
+      <dt>İlgili Talep</dt><dd>{{ communication.related_request.title }}</dd>
+      {% endif %}
+      {% if communication.related_project_risk %}
+      <dt>İlgili Risk</dt><dd>{{ communication.related_project_risk.title }}</dd>
+      {% endif %}
+      {% if communication.related_uat_record %}
+      <dt>İlgili UAT</dt><dd>{{ communication.related_uat_record.scenario_name }}</dd>
+      {% endif %}
+      {% if communication.related_decision %}
+      <dt>İlgili Karar</dt><dd>{{ communication.related_decision.title }}</dd>
+      {% endif %}
+      <dt>Gönderim Tarihi</dt><dd>{{ communication.created_at|date:"d.m.Y H:i" }}</dd>
+      <dt>Okundu Durumu</dt>
+      <dd>
+        {% if communication.is_read %}
+        Okundu{% if communication.read_at %} ({{ communication.read_at|date:"d.m.Y H:i" }}){% endif %}
+        {% else %}
+        Okunmadı
+        {% endif %}
+      </dd>
+      {% if communication.communication_type == "Talimat" %}
+      <dt>Öncelik</dt><dd>{{ communication.priority }}</dd>
+      <dt>Hedef Tarih</dt><dd>{{ communication.due_date|date:"d.m.Y"|default:"—" }}</dd>
+      <dt>Durum</dt><dd>{{ communication.status }}</dd>
+      <dt>Tamamlanma Notu</dt><dd>{{ communication.completion_note|default:"—"|linebreaksbr }}</dd>
+      {% endif %}
+    </dl>
+
+    {% if is_recipient and not communication.is_read %}
+    <form method="post" style="margin-top:1rem;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="mark_read">
+      <button type="submit" class="btn btn-secondary btn-sm">Okundu olarak işaretle</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if communication.communication_type == "Talimat" and status_form and is_recipient %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Talimat Durum Güncelleme</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_status">
+      <div class="form-group">
+        <label class="form-label">{{ status_form.status.label }}</label>
+        {{ status_form.status }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ status_form.completion_note.label }}</label>
+        {{ status_form.completion_note }}
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Durumu Kaydet</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if replies %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Yanıtlar ve Görüşme Geçmişi</div>
+  <div class="card-body">
+    {% for reply in replies %}
+    <div class="comm-reply-item">
+      <div class="comm-reply-meta">
+        <strong>{% if reply.sender.profile %}{{ reply.sender.profile.full_name }}{% else %}{{ reply.sender.username }}{% endif %}</strong>
+        <span>{{ reply.created_at|date:"d.m.Y H:i" }}</span>
+      </div>
+      <p>{{ reply.description|linebreaksbr }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if can_reply %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Yanıt Yaz</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reply">
+      <div class="form-group">
+        <label class="form-label">{{ reply_form.description.label }}</label>
+        {{ reply_form.description }}
+      </div>
+      <button type="submit" class="btn btn-primary">Yanıt Gönder</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if is_sender %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Gönderim Durumu</div>
+  <div class="card-body">
+    <p class="section-note">
+      Alıcı okuma durumu:
+      {% if communication.is_read %}Okundu{% if communication.read_at %} ({{ communication.read_at|date:"d.m.Y H:i" }}){% endif %}{% else %}Henüz okunmadı{% endif %}
+    </p>
+    {% if communication.communication_type == "Talimat" %}
+    <p class="section-note">Güncel talimat durumu: <strong>{{ communication.status }}</strong></p>
+    {% if communication.completion_note %}
+    <p class="section-note">Tamamlanma notu: {{ communication.completion_note }}</p>
+    {% endif %}
+    {% endif %}
+    {% if replies %}
+    <p class="section-note">{{ replies|length }} yanıt kaydı mevcut.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

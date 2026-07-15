@@ -1,0 +1,95 @@
+{% extends "app_base.html" %}
+{% block title %}Teknik Aksiyonlar — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+{% include "projects/_pending_instructions.html" %}
+
+<div class="page-header">
+  <h2>Teknik Aksiyonlar</h2>
+  <p>Önerilen aksiyon ve teknik müdahale gerektiren kayıtları yönetin.</p>
+</div>
+
+<div class="card">
+  <div class="card-header">Aksiyon Gerektiren Kayıtlar</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kayıt No</th>
+          <th>Başlık</th>
+          <th>Teknik Durum</th>
+          <th>Risk</th>
+          <th>Önerilen Aksiyon</th>
+          <th>Hedef Tarih</th>
+          {% if can_manage_technical_actions %}<th>İşlem</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in action_records %}
+        <tr>
+          <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+          <td>{{ req.title|truncatechars:35 }}</td>
+          <td>{{ req.technical_status|default:"—" }}</td>
+          <td><span class="risk-badge risk-{{ req.risk_level|lower }}">{{ req.risk_level }}</span></td>
+          <td>{{ req.recommended_action|truncatechars:50|default:"—" }}</td>
+          <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+          {% if can_manage_technical_actions %}
+          <td>
+            <details>
+              <summary class="btn btn-secondary btn-sm">Teknik Güncelle</summary>
+              <form method="post" style="margin-top:.5rem;min-width:16rem;">
+                {% csrf_token %}
+                <input type="hidden" name="record_id" value="{{ req.pk }}">
+                <div class="form-group">
+                  <label class="form-label">Teknik Durum</label>
+                  <select name="technical_status" class="form-control">
+                    <option value="">Seçiniz</option>
+                    {% for value, label in technical_form.fields.technical_status.choices %}
+                    {% if value %}<option value="{{ value }}" {% if req.technical_status == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Geçici Çözüm Var mı?</label>
+                  <input type="checkbox" name="has_workaround" class="form-check-input" {% if req.has_workaround %}checked{% endif %}>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Kök Neden Durumu</label>
+                  <select name="root_cause_status" class="form-control">
+                    <option value="">Seçiniz</option>
+                    {% for value, label in technical_form.fields.root_cause_status.choices %}
+                    {% if value %}<option value="{{ value }}" {% if req.root_cause_status == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Çözüm Notu</label>
+                  <textarea name="solution_note" class="form-control" rows="2">{{ req.solution_note }}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tekrar Test Durumu</label>
+                  <select name="retest_status" class="form-control">
+                    <option value="">Seçiniz</option>
+                    {% for value, label in technical_form.fields.retest_status.choices %}
+                    {% if value %}<option value="{{ value }}" {% if req.retest_status == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Önerilen Aksiyon</label>
+                  <textarea name="recommended_action" class="form-control" rows="2">{{ req.recommended_action }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Kaydet</button>
+              </form>
+            </details>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="{% if can_manage_technical_actions %}7{% else %}6{% endif %}" class="empty-state">Aksiyon gerektiren kayıt bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

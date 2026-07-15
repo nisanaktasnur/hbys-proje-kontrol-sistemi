@@ -1,0 +1,181 @@
+{% extends "app_base.html" %}
+{% block title %}Risk Erken Uyarı — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+
+<div class="page-header">
+  <h2>Risk Erken Uyarı</h2>
+  <p>Proje risklerini ve öncelikli müdahale alanlarını izleyin.</p>
+</div>
+
+<h3 class="subsection-title">Talep Bazlı Risk Özeti</h3>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Düşük Riskli Talep</div><div class="kpi-value">{{ low_count }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Orta Riskli Talep</div><div class="kpi-value">{{ medium_count }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Riskli Talep</div><div class="kpi-value">{{ high_count }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Hedef Tarihi Geçen Talep</div><div class="kpi-value">{{ overdue_count }}</div></div>
+</div>
+
+{% if project_risk_summary %}
+<h3 class="subsection-title">Proje Risk Kaydı Özeti</h3>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Düşük Riskli Proje Riski</div><div class="kpi-value">{{ project_risk_summary.low }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Orta Riskli Proje Riski</div><div class="kpi-value">{{ project_risk_summary.medium }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Riskli Proje Riski</div><div class="kpi-value">{{ project_risk_summary.high }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Hedef Tarihi Geçen Risk Aksiyonu</div><div class="kpi-value">{{ project_risk_summary.overdue_actions }}</div></div>
+</div>
+
+{% include "projects/_risk_matrix_workspace.html" with matrix_groups=matrix_risk_details matrix_details_title="Matrise Göre Risk Detayları" can_manage_risks=can_manage_project_risks %}
+
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Proje Risk Kaydı</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Risk Başlığı</th>
+          <th>Olasılık</th>
+          <th>Etki</th>
+          <th>Risk Seviyesi</th>
+          <th>Önleyici Aksiyon</th>
+          <th>Sorumlu</th>
+          <th>Hedef Tarih</th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for risk in project_risks %}
+        <tr>
+          <td>{{ risk.title|truncatechars:35 }}</td>
+          <td>{{ risk.probability }}</td>
+          <td>{{ risk.impact }}</td>
+          <td><span class="risk-badge risk-{{ risk.risk_level|lower }}">{{ risk.risk_level }}</span></td>
+          <td>{{ risk.mitigation_action|truncatechars:40|default:"—" }}</td>
+          <td>{% if risk.owner %}{{ risk.owner.username }}{% else %}—{% endif %}</td>
+          <td>{{ risk.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{{ risk.status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state">Proje riski kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if high_risks_no_action %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Önleyici Aksiyonu Tanımsız Yüksek Riskler</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Risk</th><th>Kategori</th><th>Sorumlu</th><th>Hedef Tarih</th></tr></thead>
+      <tbody>
+        {% for risk in high_risks_no_action %}
+        <tr>
+          <td>{{ risk.title|truncatechars:40 }}</td>
+          <td>{{ risk.category }}</td>
+          <td>{% if risk.owner %}{{ risk.owner.username }}{% else %}—{% endif %}</td>
+          <td>{{ risk.due_date|date:"d.m.Y"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2" style="margin-top:1.5rem;">
+  <div class="card">
+    <div class="card-header">Canlı Geçişi Etkileyen Yüksek Riskler</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Kayıt No</th><th>Başlık</th><th>Risk</th><th>Hedef Tarih</th></tr></thead>
+        <tbody>
+          {% for req in go_live_high %}
+          <tr>
+            <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+            <td>{{ req.title|truncatechars:40 }}</td>
+            <td><span class="risk-badge risk-yüksek">{{ req.risk_level }}</span></td>
+            <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="empty-state">Kayıt bulunmuyor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Süreç Bazlı Risk Dağılımı</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Süreç</th><th>Düşük</th><th>Orta</th><th>Yüksek</th></tr></thead>
+        <tbody>
+          {% for row in process_risk %}
+          <tr>
+            <td>{{ row.process_area }}</td>
+            <td>{{ row.dusuk }}</td>
+            <td>{{ row.orta }}</td>
+            <td>{{ row.yuksek }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="empty-state">Veri yok.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Öncelikli Müdahale Listesi</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Kayıt No</th><th>Başlık</th><th>Süreç</th><th>Risk</th><th>Hedef Tarih</th></tr></thead>
+      <tbody>
+        {% for req in priority_list %}
+        <tr>
+          <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+          <td>{{ req.title|truncatechars:45 }}</td>
+          <td>{{ req.process_area }}</td>
+          <td><span class="risk-badge risk-yüksek">{{ req.risk_level }}</span></td>
+          <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Öncelikli kayıt bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if overdue_requests or overdue_decisions %}
+<div class="grid-2" style="margin-top:1.5rem;">
+  {% if overdue_requests %}
+  <div class="card">
+    <div class="card-header">Geciken Talepler</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for req in overdue_requests %}
+        <li><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a> — {{ req.title|truncatechars:40 }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+  {% if overdue_decisions %}
+  <div class="card">
+    <div class="card-header">Geciken Karar Destek Aksiyonları</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for d in overdue_decisions %}
+        <li>{{ d.title }} — {{ d.due_date|date:"d.m.Y" }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "app_base.html" %}
+{% block title %}Teknik İş Listesi — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+{% include "projects/_pending_instructions.html" %}
+
+<div class="page-header">
+  <h2>Teknik İş Listesi</h2>
+  <p>Teknik ekip sorumluluğundaki açık işleri filtreleyin ve takip edin.</p>
+</div>
+
+<form method="get" class="filter-bar card" style="padding:1rem;margin-bottom:1.5rem;">
+  <div class="filter-item">
+    <label class="form-label">Durum</label>
+    <select name="status" class="form-control">
+      <option value="">Tümü</option>
+      {% for value, label in status_choices %}
+      <option value="{{ value }}" {% if filter_status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label class="form-label">Risk Seviyesi</label>
+    <select name="risk_level" class="form-control">
+      <option value="">Tümü</option>
+      {% for value, label in risk_choices %}
+      <option value="{{ value }}" {% if filter_risk == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label class="form-label">Atama</label>
+    <label><input type="checkbox" name="mine" value="1" class="form-check-input" {% if filter_mine %}checked{% endif %}> Bana atananlar</label>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Uygula</button>
+  </div>
+</form>
+
+<div class="card">
+  <div class="card-header">Teknik İş Kayıtları ({{ page_obj.paginator.count }})</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kayıt No</th>
+          <th>Başlık</th>
+          <th>Süreç</th>
+          <th>Durum</th>
+          <th>Teknik Sorumlu</th>
+          <th>Teknik Durum</th>
+          <th>Geçici Çözüm Var mı?</th>
+          <th>Kök Neden Durumu</th>
+          <th>Çözüm Notu</th>
+          <th>Tekrar Test Durumu</th>
+          <th>Canlı Geçiş Etkisi</th>
+          <th>Risk</th>
+          <th>Hedef Tarih</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in page_obj %}
+        <tr>
+          <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+          <td>{{ req.title|truncatechars:35 }}</td>
+          <td>{{ req.process_area }}</td>
+          <td>{{ req.status }}</td>
+          <td>{% if req.technical_owner %}{% if req.technical_owner.profile %}{{ req.technical_owner.profile.full_name }}{% else %}{{ req.technical_owner.username }}{% endif %}{% else %}—{% endif %}</td>
+          <td>{{ req.technical_status|default:"—" }}</td>
+          <td>{% if req.has_workaround %}Evet{% elif req.has_workaround == False %}Hayır{% else %}—{% endif %}</td>
+          <td>{{ req.root_cause_status|default:"—" }}</td>
+          <td>{{ req.solution_note|truncatechars:40|default:"—" }}</td>
+          <td>{{ req.retest_status|default:"—" }}</td>
+          <td>{{ req.go_live_impact|default:"—" }}</td>
+          <td><span class="risk-badge risk-{{ req.risk_level|lower }}">{{ req.risk_level }}</span></td>
+          <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="13" class="empty-state">Teknik iş kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}
+  <a href="?page={{ page_obj.previous_page_number }}{% if filter_status %}&status={{ filter_status }}{% endif %}{% if filter_risk %}&risk_level={{ filter_risk }}{% endif %}{% if filter_mine %}&mine=1{% endif %}" class="btn btn-secondary btn-sm">Önceki</a>
+  {% endif %}
+  <span>Sayfa {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+  <a href="?page={{ page_obj.next_page_number }}{% if filter_status %}&status={{ filter_status }}{% endif %}{% if filter_risk %}&risk_level={{ filter_risk }}{% endif %}{% if filter_mine %}&mine=1{% endif %}" class="btn btn-secondary btn-sm">Sonraki</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

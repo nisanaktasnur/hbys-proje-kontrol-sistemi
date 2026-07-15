@@ -1,0 +1,24 @@
+{% if records %}
+<div class="table-wrap">
+  <table class="data-table comm-list-table">
+    <thead>
+      <tr>
+        {% for header in headers %}
+        <th>{{ header }}</th>
+        {% endfor %}
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for comm in records %}
+      <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+        {% block row_cells %}{% endblock %}
+        <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty-state">{{ empty_text }}</p>
+{% endif %}

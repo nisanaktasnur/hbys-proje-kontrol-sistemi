@@ -1,0 +1,29 @@
+{% if pending_instructions %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header">Bekleyen Talimatlar</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Başlık</th>
+          <th>Durum</th>
+          <th>Öncelik</th>
+          <th>Hedef Tarih</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in pending_instructions %}
+        <tr>
+          <td>{{ item.title|truncatechars:45 }}</td>
+          <td>{{ item.status }}</td>
+          <td>{{ item.priority }}</td>
+          <td>{{ item.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td><a href="{% url 'projects:communication_detail' item.pk %}" class="btn btn-secondary btn-sm">Görüntüle</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

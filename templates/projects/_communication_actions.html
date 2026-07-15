@@ -1,0 +1,31 @@
+{% if not comm.is_read %}
+<form method="post" style="display:inline;">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="mark_read">
+  <input type="hidden" name="communication_id" value="{{ comm.pk }}">
+  <button type="submit" class="btn btn-secondary btn-sm">Okundu olarak işaretle</button>
+</form>
+{% endif %}
+{% if comm.communication_type == "Talimat" %}
+<details class="comm-status-details">
+  <summary class="btn btn-secondary btn-sm">Durum Güncelle</summary>
+  <form method="post" class="comm-status-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="update_status">
+    <input type="hidden" name="communication_id" value="{{ comm.pk }}">
+    <div class="form-group">
+      <label class="form-label">Durum</label>
+      <select name="status" class="form-control">
+        {% for value, label in instruction_status_choices %}
+        <option value="{{ value }}" {% if comm.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tamamlanma Notu</label>
+      <textarea name="completion_note" class="form-control" rows="2">{{ comm.completion_note }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Kaydet</button>
+  </form>
+</details>
+{% endif %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-card">
+    <h2>Erişim Engellendi</h2>
+    <p>Bu sayfaya erişim yetkiniz bulunmuyor.</p>
+    <a href="{{ home_url|default:'/' }}" class="btn btn-primary">Ana Sayfaya Dön</a>
+  </div>
+</div>
+{% endblock %}

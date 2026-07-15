@@ -1,0 +1,57 @@
+{% extends "app_base.html" %}
+{% block title %}Teknik Riskler — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+
+<div class="page-header">
+  <h2>Teknik Riskler</h2>
+  <p>Teknik kategorideki proje risklerini ve matris dağılımını izleyin.</p>
+</div>
+
+{% if project_risk_summary %}
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Düşük</div><div class="kpi-value">{{ project_risk_summary.low }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Orta</div><div class="kpi-value">{{ project_risk_summary.medium }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek</div><div class="kpi-value">{{ project_risk_summary.high }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Geciken Aksiyon</div><div class="kpi-value">{{ project_risk_summary.overdue_actions }}</div></div>
+</div>
+
+{% include "projects/_risk_matrix_workspace.html" with matrix_groups=matrix_details matrix_details_title="Matrise Göre Teknik Risk Detayları" can_manage_risks=can_manage_technical_risks %}
+{% endif %}
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Teknik Proje Riskleri</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Risk Başlığı</th>
+          <th>Kategori</th>
+          <th>Olasılık</th>
+          <th>Etki</th>
+          <th>Risk Seviyesi</th>
+          <th>Önleyici Aksiyon</th>
+          <th>Hedef Tarih</th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for risk in technical_risks %}
+        <tr>
+          <td>{{ risk.title|truncatechars:35 }}</td>
+          <td>{{ risk.category }}</td>
+          <td>{{ risk.probability }}</td>
+          <td>{{ risk.impact }}</td>
+          <td><span class="risk-badge risk-{{ risk.risk_level|lower }}">{{ risk.risk_level }}</span></td>
+          <td>{{ risk.mitigation_action|truncatechars:40|default:"—" }}</td>
+          <td>{{ risk.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{{ risk.status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state">Teknik risk kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

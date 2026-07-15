@@ -1,0 +1,25 @@
+<table class="risk-matrix">
+  <thead>
+    <tr>
+      <th>Etki ↓ / Olasılık →</th>
+      <th>Düşük</th>
+      <th>Orta</th>
+      <th>Yüksek</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in project_risk_summary.matrix_rows %}
+    <tr>
+      <th class="axis-label">{{ row.impact }}</th>
+      {% for cell in row.cells %}
+      <td>
+        <div class="matrix-cell level-{{ cell.level|lower }}">
+          <span class="matrix-count">{{ cell.count }}</span>
+          <span class="matrix-level">{{ cell.level }}</span>
+        </div>
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

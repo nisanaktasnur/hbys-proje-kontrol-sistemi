@@ -1,0 +1,16 @@
+<div class="risk-matrix-layout">
+  <div class="risk-matrix-column">
+    <div class="card risk-matrix-card">
+      <div class="card-header">Risk Matrisi (3×3)</div>
+      <div class="card-body risk-matrix-wrap">
+        {% include "projects/_risk_matrix_table.html" %}
+      </div>
+    </div>
+    {% if matrix_groups %}
+    {% include "projects/_matrix_risk_details.html" with matrix_groups=matrix_groups section_title=matrix_details_title embedded=True %}
+    {% endif %}
+  </div>
+  <div class="risk-form-column">
+    {% include "projects/_project_risk_form_panel.html" with can_manage_risks=can_manage_risks %}
+  </div>
+</div>

@@ -1,0 +1,38 @@
+{% if matrix_groups %}
+<div class="matrix-details-panel{% if embedded %} matrix-details-embedded{% endif %}">
+  <div class="matrix-details-header">{{ section_title|default:"Matrise Göre Risk Detayları" }}</div>
+  <div class="matrix-details-body">
+    {% for group in matrix_groups %}
+    <div class="matrix-detail-group">
+      <div class="matrix-detail-group-title">{{ group.title }} <span class="matrix-detail-meta">({{ group.count }} risk — seviye: {{ group.level }})</span></div>
+      <div class="table-wrap">
+        <table class="data-table matrix-detail-table">
+          <thead>
+            <tr>
+              <th>Risk Başlığı</th>
+              <th>Risk Seviyesi</th>
+              <th>Sorumlu</th>
+              <th>Hedef Tarih</th>
+              <th>Durum</th>
+              <th>Önleyici Aksiyon</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for risk in group.risks %}
+            <tr>
+              <td>{{ risk.title|truncatechars:40 }}</td>
+              <td><span class="risk-badge risk-{{ risk.risk_level|lower }}">{{ risk.risk_level }}</span></td>
+              <td>{% if risk.owner %}{% if risk.owner.profile %}{{ risk.owner.profile.full_name }}{% else %}{{ risk.owner.username }}{% endif %}{% else %}—{% endif %}</td>
+              <td>{{ risk.due_date|date:"d.m.Y"|default:"—" }}</td>
+              <td>{{ risk.status }}</td>
+              <td>{{ risk.mitigation_action|truncatechars:45|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

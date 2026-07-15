@@ -1,0 +1,256 @@
+{% extends "app_base.html" %}
+{% block title %}Proje İletişim Merkezi — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+{% include "projects/_pending_instructions.html" %}
+
+<div class="page-header">
+  <h2>Proje İletişim Merkezi</h2>
+  <p>Gelen ve gönderilen mesaj/talimatları görüntüleyin, detay açın ve yanıtlayın.</p>
+  {% if active_project %}
+  <p class="section-note" style="margin-top:.5rem;">
+    Aktif bağlam: <strong>{{ active_project.organization.name }}</strong> / <strong>{{ active_project.name }}</strong>
+  </p>
+  {% endif %}
+</div>
+
+<nav class="comm-tabs">
+  <a href="?tab=gelen-mesajlar" class="{% if active_tab == 'gelen-mesajlar' %}active{% endif %}">Gelen Mesajlar</a>
+  <a href="?tab=gelen-talimatlar" class="{% if active_tab == 'gelen-talimatlar' %}active{% endif %}">Gelen Talimatlar</a>
+  <a href="?tab=gonderilenler" class="{% if active_tab == 'gonderilenler' %}active{% endif %}">Gönderilenler</a>
+  <a href="?tab=okunmamislar" class="{% if active_tab == 'okunmamislar' %}active{% endif %}">Okunmamışlar</a>
+  <a href="?tab=tamamlanan-talimatlar" class="{% if active_tab == 'tamamlanan-talimatlar' %}active{% endif %}">Tamamlanan Talimatlar</a>
+  {% if can_send_communication %}
+  <a href="?tab=yeni" class="{% if active_tab == 'yeni' %}active{% endif %}">Yeni Mesaj / Talimat</a>
+  {% endif %}
+</nav>
+
+{% if active_tab == 'gelen-mesajlar' %}
+<div class="card">
+  <div class="card-header">Gelen Mesajlar</div>
+  <div class="card-body">
+    {% if incoming_messages %}
+    <div class="table-wrap">
+      <table class="data-table comm-list-table">
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Önizleme</th>
+            <th>Gönderen</th>
+            <th>Tarih</th>
+            <th>Kurum / Proje</th>
+            <th>Okundu</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comm in incoming_messages %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+            <td>{{ comm.title|truncatechars:35 }}</td>
+            <td>{{ comm.description|truncatechars:50 }}</td>
+            <td>{% if comm.sender %}{% if comm.sender.profile %}{{ comm.sender.profile.full_name }}{% else %}{{ comm.sender.username }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{{ comm.created_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ comm.project.organization.name }} / {{ comm.project.name }}</td>
+            <td>{% if comm.is_read %}Okundu{% else %}Okunmadı{% endif %}</td>
+            <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Gelen mesaj bulunmuyor.</p>
+    {% endif %}
+  </div>
+</div>
+{% elif active_tab == 'gelen-talimatlar' %}
+<div class="card">
+  <div class="card-header">Gelen Talimatlar</div>
+  <div class="card-body">
+    {% if incoming_instructions %}
+    <div class="table-wrap">
+      <table class="data-table comm-list-table">
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Önizleme</th>
+            <th>Gönderen</th>
+            <th>Öncelik</th>
+            <th>Hedef Tarih</th>
+            <th>Durum</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comm in incoming_instructions %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+            <td>{{ comm.title|truncatechars:35 }}</td>
+            <td>{{ comm.description|truncatechars:50 }}</td>
+            <td>{% if comm.sender %}{% if comm.sender.profile %}{{ comm.sender.profile.full_name }}{% else %}{{ comm.sender.username }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{{ comm.priority }}</td>
+            <td>{{ comm.due_date|date:"d.m.Y"|default:"—" }}</td>
+            <td>{{ comm.status }}</td>
+            <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Gelen talimat bulunmuyor.</p>
+    {% endif %}
+  </div>
+</div>
+{% elif active_tab == 'gonderilenler' %}
+<div class="card">
+  <div class="card-header">Gönderilenler</div>
+  <div class="card-body">
+    {% if sent_communications %}
+    <div class="table-wrap">
+      <table class="data-table comm-list-table">
+        <thead>
+          <tr>
+            <th>Tür</th>
+            <th>Başlık</th>
+            <th>Alıcı</th>
+            <th>Tarih</th>
+            <th>Durum</th>
+            <th>Okundu</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comm in sent_communications %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+            <td>{{ comm.communication_type }}</td>
+            <td>{{ comm.title|truncatechars:35 }}</td>
+            <td>{% if comm.recipient_user %}{{ comm.recipient_user.username }}{% else %}{{ comm.recipient_role|default:"—" }}{% endif %}</td>
+            <td>{{ comm.created_at|date:"d.m.Y H:i" }}</td>
+            <td>{{ comm.status }}</td>
+            <td>{% if comm.is_read %}Evet{% else %}Hayır{% endif %}</td>
+            <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Gönderilen kayıt bulunmuyor.</p>
+    {% endif %}
+  </div>
+</div>
+{% elif active_tab == 'okunmamislar' %}
+<div class="card">
+  <div class="card-header">Okunmamışlar</div>
+  <div class="card-body">
+    {% if unread_communications %}
+    <div class="table-wrap">
+      <table class="data-table comm-list-table">
+        <thead>
+          <tr>
+            <th>Tür</th>
+            <th>Başlık</th>
+            <th>Gönderen</th>
+            <th>Tarih</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comm in unread_communications %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+            <td>{{ comm.communication_type }}</td>
+            <td>{{ comm.title|truncatechars:40 }}</td>
+            <td>{% if comm.sender %}{% if comm.sender.profile %}{{ comm.sender.profile.full_name }}{% else %}{{ comm.sender.username }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{{ comm.created_at|date:"d.m.Y H:i" }}</td>
+            <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Okunmamış kayıt bulunmuyor.</p>
+    {% endif %}
+  </div>
+</div>
+{% elif active_tab == 'tamamlanan-talimatlar' %}
+<div class="card">
+  <div class="card-header">Tamamlanan Talimatlar</div>
+  <div class="card-body">
+    {% if completed_instructions %}
+    <div class="table-wrap">
+      <table class="data-table comm-list-table">
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Gönderen</th>
+            <th>Durum</th>
+            <th>Tamamlanma Notu</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for comm in completed_instructions %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' comm.pk %}';">
+            <td>{{ comm.title|truncatechars:35 }}</td>
+            <td>{% if comm.sender %}{% if comm.sender.profile %}{{ comm.sender.profile.full_name }}{% else %}{{ comm.sender.username }}{% endif %}{% else %}—{% endif %}</td>
+            <td>{{ comm.status }}</td>
+            <td>{{ comm.completion_note|truncatechars:45|default:"—" }}</td>
+            <td><a href="{% url 'projects:communication_detail' comm.pk %}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation();">Detay</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state">Tamamlanan talimat bulunmuyor.</p>
+    {% endif %}
+  </div>
+</div>
+{% elif active_tab == 'yeni' and can_send_communication %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">Yeni Mesaj</div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="communication_type" value="Mesaj">
+        {% for field in message_form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="form-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% if message_form.non_field_errors %}
+        <div class="form-error">{{ message_form.non_field_errors|striptags }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Mesaj Gönder</button>
+      </form>
+    </div>
+  </div>
+  <div class="card" id="talimat">
+    <div class="card-header">Yeni Talimat</div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="hidden" name="communication_type" value="Talimat">
+        {% for field in instruction_form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="form-error">{{ field.errors|striptags }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% if instruction_form.non_field_errors %}
+        <div class="form-error">{{ instruction_form.non_field_errors|striptags }}</div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary">Talimat Gönder</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "app_base.html" %}
+{% block title %}Kullanıcı Yönetimi — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Kullanıcı Yönetimi</h2>
+  <p>Bekleyen kayıt başvurularını onaylayın veya reddedin.</p>
+</div>
+
+<form method="get" class="filter-bar card" style="padding:1rem;margin-bottom:1.5rem;">
+  <div class="filter-item">
+    <label class="form-label">Rol</label>
+    <select name="role" class="form-control">
+      <option value="">Tümü</option>
+      {% for value, label in role_choices %}
+      <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label class="form-label">Onay Durumu</label>
+    <select name="approval" class="form-control">
+      <option value="">Tümü</option>
+      {% for value, label in approval_choices %}
+      <option value="{{ value }}" {% if approval_filter == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Uygula</button>
+    <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">Temizle</a>
+  </div>
+</form>
+
+<div class="card">
+  <h3 class="card-title">Onay Bekleyen Başvurular</h3>
+  {% if pending_profiles %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Rol</th><th>Başvuru Tarihi</th><th>İşlem</th></tr>
+      </thead>
+      <tbody>
+        {% for profile in pending_profiles %}
+        <tr>
+          <td>{{ profile.full_name }}</td>
+          <td>{{ profile.user.username }}</td>
+          <td>{{ profile.user.memberships.first.role }}</td>
+          <td>{{ profile.created_at|date:"d.m.Y" }}</td>
+          <td>
+            <form method="post" action="{% url 'accounts:approve_user' profile.user.id %}" style="display:inline;">{% csrf_token %}<button class="btn btn-primary btn-sm">Onayla</button></form>
+            <form method="post" action="{% url 'accounts:reject_user' profile.user.id %}" style="display:inline;">{% csrf_token %}<button class="btn btn-danger btn-sm">Reddet</button></form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty-state">Onay bekleyen başvuru yok.</p>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <h3 class="card-title">Tüm Kullanıcılar</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Kullanıcı Adı</th><th>Ad Soyad</th><th>Rol</th><th>Onay Durumu</th><th>Kayıt Tarihi</th></tr>
+      </thead>
+      <tbody>
+        {% for profile in all_profiles %}
+        <tr>
+          <td>{{ profile.user.username }}</td>
+          <td>{{ profile.full_name }}</td>
+          <td>{{ profile.user.memberships.first.role|default:"—" }}</td>
+          <td>{{ profile.approval_status }}</td>
+          <td>{{ profile.created_at|date:"d.m.Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Kullanıcı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

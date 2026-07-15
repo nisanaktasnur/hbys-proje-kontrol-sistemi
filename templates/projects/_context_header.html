@@ -1,0 +1,15 @@
+{% if active_organization or active_project %}
+<div class="context-header card" style="margin-bottom:1rem;padding:.75rem 1.25rem;">
+  <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center;">
+    {% if active_organization %}
+    <span style="font-size:.8125rem;color:var(--text-secondary);">Kurum: <strong>{{ active_organization.name }}</strong></span>
+    {% endif %}
+    {% if active_project %}
+    <span style="font-size:.8125rem;color:var(--text-secondary);">Proje: <strong>{{ active_project.name }}</strong></span>
+    {% endif %}
+    {% if accessible_organizations|length > 1 or accessible_projects|length > 1 %}
+    <span style="font-size:.75rem;color:var(--text-muted);">Değiştirmek için üst çubuğu kullanın.</span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

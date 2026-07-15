@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>HBYS Proje Kontrol Sistemi</h1>
+    <p class="subtitle">Proje Karar Destek Platformu</p>
+    <p class="desc">HBYS uygulama projelerinde talepleri, riskleri, canlı geçiş hazırlığını ve karar süreçlerini tek noktadan yönetin.</p>
+    {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="id_username">{{ form.username.label }}</label>
+        {{ form.username }}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="id_password">{{ form.password.label }}</label>
+        {{ form.password }}
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Giriş Yap</button>
+    </form>
+    <div class="demo-accounts-card">
+      <div class="demo-accounts-title">Demo Hesaplar</div>
+      <ul class="demo-accounts-list">
+        <li><span class="demo-role">Sistem Yöneticisi</span><span class="demo-cred">admin / Admin123!</span></li>
+        <li><span class="demo-role">Proje Yöneticisi</span><span class="demo-cred">pm / Pm123!</span></li>
+        <li><span class="demo-role">Teknik Lider</span><span class="demo-cred">techlead / Tech123!</span></li>
+        <li><span class="demo-role">Yönetici</span><span class="demo-cred">manager / Manager123!</span></li>
+      </ul>
+      <p class="demo-accounts-note">Bu hesaplar yalnızca demo amaçlıdır.</p>
+    </div>
+    <p style="margin-top:1rem;font-size:.875rem;text-align:center;">
+      Hesabınız yok mu? <a href="{% url 'accounts:register' %}">Kayıt Ol</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "app_base.html" %}
+{% block title %}Karar Destek Merkezi — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+
+<div class="page-header">
+  <h2>Karar Destek Merkezi</h2>
+  <p>Risk, UAT ve canlı geçiş bulgularını uygulanabilir proje kararlarına dönüştürün.</p>
+</div>
+
+{% if pending_suggestions and can_manage_decision_records %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header">Önerilen İyileştirme Aksiyonları</div>
+  <div class="card-body">
+    <ul class="suggestion-list">
+      {% for item in pending_suggestions %}
+      <li>
+        <div>
+          <strong>{{ item.title|truncatechars:50 }}</strong>
+          <div class="section-note">{{ item.source }} — {{ item.recommendation|truncatechars:80 }}</div>
+        </div>
+        <form method="post" action="{% url 'projects:create_decision_suggestion' %}">
+          {% csrf_token %}
+          <input type="hidden" name="suggestion_index" value="{{ forloop.counter0 }}">
+          <button type="submit" class="btn btn-secondary btn-sm">Karar Kaydı Oluştur</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">Önerilen Kararlar</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Başlık</th>
+            <th>Öncelik</th>
+            <th>Sorumlu Ekip</th>
+            <th>Hedef Tarih</th>
+            <th>İlgili Talep</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in recommended %}
+          <tr>
+            <td>{{ d.title|truncatechars:35 }}</td>
+            <td>{{ d.priority }}</td>
+            <td>{{ d.responsible_team|default:"—" }}</td>
+            <td>{{ d.due_date|date:"d.m.Y"|default:"—" }}</td>
+            <td>{% if d.related_request %}{{ d.related_request.record_number }}{% else %}—{% endif %}</td>
+            <td>{{ d.status }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="empty-state">Önerilen karar bulunmuyor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Yeni Karar Destek Kaydı</div>
+    <div class="card-body">
+      {% if can_manage_decision_records %}
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-group">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+      </form>
+      {% else %}
+      <p class="section-note">Karar destek kaydı oluşturma yetkiniz bulunmuyor.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Tüm Karar Destek Kayıtları</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Başlık</th>
+          <th>Kaynak</th>
+          <th>Tespit</th>
+          <th>Önerilen Karar</th>
+          <th>Beklenen Etki</th>
+          <th>Sorumlu Ekip</th>
+          <th>Hedef Tarih</th>
+          <th>Durum</th>
+          <th>Güncelle</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in decisions %}
+        <tr>
+          <td>{{ d.title|truncatechars:30 }}</td>
+          <td>{{ d.source }}</td>
+          <td>{{ d.finding|truncatechars:40 }}</td>
+          <td>{{ d.recommendation|truncatechars:40 }}</td>
+          <td>{{ d.expected_effect|truncatechars:30|default:"—" }}</td>
+          <td>{{ d.responsible_team|default:"—" }}</td>
+          <td>{{ d.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{{ d.status }}</td>
+          <td>
+            <form method="post" action="{% url 'projects:update_decision' d.pk %}" class="inline-update-form">
+              {% csrf_token %}
+              <select name="status" class="form-control">
+                {% for value, label in decision_statuses %}
+                <option value="{{ value }}" {% if d.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-secondary btn-sm">Güncelle</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="empty-state">Kayıt bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

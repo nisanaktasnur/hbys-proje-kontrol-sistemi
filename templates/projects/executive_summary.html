@@ -1,0 +1,217 @@
+{% extends "app_base.html" %}
+{% block title %}Yönetici Özeti — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+
+<div class="page-header">
+  <h2>Yönetici Özeti</h2>
+  <p>Proje durumunu grafikler ve raporlarla değerlendirin.</p>
+</div>
+
+<form method="get" class="filter-bar card" style="padding:1rem;margin-bottom:1.5rem;">
+  {% for field in filter_form %}
+  <div class="filter-item">
+    <label class="form-label">{{ field.label }}</label>
+    {{ field }}
+  </div>
+  {% endfor %}
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-primary">Uygula</button>
+  </div>
+</form>
+
+<h3 class="subsection-title">Genel Proje Özeti</h3>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Genel Proje Durumu</div><div class="kpi-value kpi-value-sm">{{ stats.project_status }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Toplam Açık Talep</div><div class="kpi-value">{{ stats.open_count }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Riskli Talep</div><div class="kpi-value">{{ stats.high_risk }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Hedef Tarihi Geçen</div><div class="kpi-value">{{ stats.overdue }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Canlı Geçiş Durumu</div><div class="kpi-value kpi-value-sm">{{ stats.overall_status }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Tamamlanan Talep</div><div class="kpi-value">{{ stats.completed }}</div></div>
+</div>
+
+{% if project_risk_summary %}
+<h3 class="subsection-title">Risk Matrisi Özeti</h3>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Düşük Proje Riski</div><div class="kpi-value">{{ project_risk_summary.low }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Orta Proje Riski</div><div class="kpi-value">{{ project_risk_summary.medium }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Proje Riski</div><div class="kpi-value">{{ project_risk_summary.high }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Geciken Risk Aksiyonu</div><div class="kpi-value">{{ project_risk_summary.overdue_actions }}</div></div>
+</div>
+{% if top_project_risk %}
+<p class="section-note">En önemli proje riski: <strong>{{ top_project_risk.title }}</strong> ({{ top_project_risk.risk_level }})</p>
+{% endif %}
+{% endif %}
+
+{% if uat_summary %}
+<h3 class="subsection-title">UAT Sonuçları</h3>
+<div class="kpi-grid kpi-grid-compact">
+  <div class="kpi-card"><div class="kpi-label">Toplam UAT Senaryosu</div><div class="kpi-value">{{ uat_summary.total }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Başarılı</div><div class="kpi-value">{{ uat_summary.successful }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Başarısız</div><div class="kpi-value">{{ uat_summary.failed }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Bloke</div><div class="kpi-value">{{ uat_summary.blocked }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Tekrar Test</div><div class="kpi-value">{{ uat_summary.retest }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Önemli Açık</div><div class="kpi-value">{{ uat_summary.high_open }}</div></div>
+</div>
+<p class="section-note">Tamamlanma: %{{ uat_summary.completion_pct }} — {{ uat_note }}</p>
+{% if blocking_uat %}
+<ul class="plain-list compact-list">
+  {% for uat in blocking_uat %}
+  <li>{{ uat.scenario_name }} — {{ uat.result_status }} ({{ uat.severity }})</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% endif %}
+
+<h3 class="subsection-title">Canlı Geçiş Hazırlığı</h3>
+<div class="card"><div class="card-body">
+  <p class="section-note">Canlı geçiş kararı; eğitim, UAT, veri aktarımı ve yetkilendirme çıktıları birlikte değerlendirilmelidir. Genel durum: <strong>{{ stats.overall_status }}</strong></p>
+</div></div>
+
+{% if post_go_live_metrics is not None %}
+<h3 class="subsection-title">Canlı Geçiş Sonrası Başarı Göstergeleri</h3>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">Gösterge Durumu</div>
+    <div class="card-body"><canvas id="metricStatusChart" height="180"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-header">Hedef ve Güncel Karşılaştırma</div>
+    <div class="card-body"><canvas id="metricCompareChart" height="180"></canvas></div>
+  </div>
+</div>
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Gösterge Tablosu</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Gösterge</th><th>Güncel</th><th>Hedef</th><th>Durum</th><th>Değerlendirme</th></tr>
+      </thead>
+      <tbody>
+        {% for m in post_go_live_metrics %}
+        <tr>
+          <td>{{ m.metric_name }}</td>
+          <td>{{ m.current_value }}{% if m.unit %} {{ m.unit }}{% endif %}</td>
+          <td>{{ m.target_value }}{% if m.unit %} {{ m.unit }}{% endif %}</td>
+          <td>{{ m.status }}</td>
+          <td>{{ m.evaluation_note|truncatechars:50|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Gösterge kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Yeni Gösterge Kaydı</div>
+  <div class="card-body">
+    {% if can_update_go_live_readiness %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        {% for field in metric_form %}
+        <div class="form-group {% if field.name == 'evaluation_note' %}full-width{% endif %}">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">Kaydet</button>
+    </form>
+    {% else %}
+    <p class="section-note">Gösterge kaydı yönetimi salt okunurdur.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if decision_actions %}
+<h3 class="subsection-title">Karar Destek Aksiyonları</h3>
+<div class="card">
+  <div class="card-body">
+    <ul class="plain-list">
+      {% for d in decision_actions %}
+      <li>{{ d.title }} — {{ d.status }} ({{ d.due_date|date:"d.m.Y"|default:"Tarih yok" }})</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+<h3 class="subsection-title">Zaman İçinde Proje Görünümü</h3>
+<div class="grid-2">
+  <div class="card"><div class="card-header">Talep Durum Dağılımı</div><div class="card-body"><canvas id="statusChart"></canvas></div></div>
+  <div class="card"><div class="card-header">Risk Dağılımı</div><div class="card-body"><canvas id="riskChart"></canvas></div></div>
+</div>
+
+<h3 class="subsection-title">Yönetici Karar Notu</h3>
+<div class="card">
+  <div class="card-body">
+    <ul class="plain-list">
+      {% for note in manager_notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="card" id="rapor-disa-aktar" style="margin-top:1.5rem;">
+  <div class="card-header">Raporları Dışa Aktar</div>
+  <div class="card-body export-links">
+    <a href="{% url 'reports:export_requests' %}?{{ filter_params }}" class="btn btn-secondary">Talep Kayıtları (CSV)</a>
+    <a href="{% url 'reports:export_risk' %}?{{ filter_params }}" class="btn btn-secondary">Risk Özeti (CSV)</a>
+    <a href="{% url 'reports:export_decisions' %}?{{ filter_params }}" class="btn btn-secondary">Karar Destek (CSV)</a>
+    <a href="{% url 'reports:export_readiness' %}?{{ filter_params }}" class="btn btn-secondary">Canlı Geçiş Hazırlığı (CSV)</a>
+    <a href="{% url 'reports:export_project_risks' %}?{{ filter_params }}" class="btn btn-secondary">Proje Riskleri (CSV)</a>
+    <a href="{% url 'reports:export_uat' %}?{{ filter_params }}" class="btn btn-secondary">UAT Sonuçları (CSV)</a>
+    <a href="{% url 'reports:export_metrics' %}?{{ filter_params }}" class="btn btn-secondary">Başarı Göstergeleri (CSV)</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const chartOpts = { responsive: true, plugins: { legend: { position: 'bottom' } } };
+new Chart(document.getElementById('statusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for s in status_chart %}'{{ s.status }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for s in status_chart %}{{ s.count }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor: ['#DCE6F0','#7895B2','#6B7C8F','#E8F0EC'] }]
+  },
+  options: chartOpts
+});
+new Chart(document.getElementById('riskChart'), {
+  type: 'pie',
+  data: {
+    labels: ['Düşük','Orta','Yüksek'],
+    datasets: [{ data: [{{ risk_chart.values.0|default:0 }}, {{ risk_chart.values.1|default:0 }}, {{ risk_chart.values.2|default:0 }}], backgroundColor: ['#E8F0EC','#F3EEE3','#F3E7E7'] }]
+  },
+  options: chartOpts
+});
+{% if metric_status_chart %}
+new Chart(document.getElementById('metricStatusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: [{% for s in metric_status_chart %}'{{ s.status }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    datasets: [{ data: [{% for s in metric_status_chart %}{{ s.count }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor: ['#E8F0EC','#F3EEE3','#F3E7E7'] }]
+  },
+  options: chartOpts
+});
+{% endif %}
+{% if metric_compare %}
+new Chart(document.getElementById('metricCompareChart'), {
+  type: 'bar',
+  data: {
+    labels: [{% for m in metric_compare %}'{{ m.name }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    datasets: [
+      { label: 'Güncel', data: [{% for m in metric_compare %}{{ m.current }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor: '#7895B2' },
+      { label: 'Hedef', data: [{% for m in metric_compare %}{{ m.target }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor: '#DCE6F0' }
+    ]
+  },
+  options: { ...chartOpts, scales: { y: { beginAtZero: true } } }
+});
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "app_base.html" %}
+{% block title %}UAT Teknik Bulguları — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+{% include "projects/_pending_instructions.html" %}
+
+<div class="page-header">
+  <h2>UAT Teknik Bulguları</h2>
+  <p>Başarısız, bloke ve tekrar test bekleyen UAT senaryolarını izleyin; teknik çözüm alanlarını güncelleyin.</p>
+</div>
+
+{% if uat_summary %}
+<div class="kpi-grid kpi-grid-compact">
+  <div class="kpi-card"><div class="kpi-label">Toplam Bulgu</div><div class="kpi-value">{{ uat_summary.total }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Başarısız</div><div class="kpi-value">{{ uat_summary.failed }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Bloke</div><div class="kpi-value">{{ uat_summary.blocked }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Tekrar Test</div><div class="kpi-value">{{ uat_summary.retest }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Önemli Açık</div><div class="kpi-value">{{ uat_summary.high_open }}</div></div>
+</div>
+{% endif %}
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">UAT Teknik Bulgu Listesi</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Senaryo</th>
+          <th>Süreç</th>
+          <th>Sonuç</th>
+          <th>Önem</th>
+          <th>Tekrar Test</th>
+          <th>Kök Neden Notu</th>
+          <th>Çözüm Notu</th>
+          <th>Sorumlu Ekip</th>
+          <th>Test Tarihi</th>
+          <th>İlgili Talep</th>
+          {% if can_update_uat_technical %}<th>Teknik Güncelleme</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for uat in uat_records %}
+        <tr>
+          <td>{{ uat.scenario_name|truncatechars:35 }}</td>
+          <td>{{ uat.process_area }}</td>
+          <td>{{ uat.result_status }}</td>
+          <td><span class="risk-badge risk-{{ uat.severity|lower }}">{{ uat.severity }}</span></td>
+          <td>{{ uat.retest_status|default:"—" }}</td>
+          <td>{{ uat.root_cause_note|truncatechars:30|default:"—" }}</td>
+          <td>{{ uat.resolution_note|truncatechars:30|default:"—" }}</td>
+          <td>{{ uat.responsible_team }}</td>
+          <td>{{ uat.test_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{% if uat.related_request %}<a href="{% url 'projects:request_detail' uat.related_request.pk %}">{{ uat.related_request.record_number }}</a>{% else %}—{% endif %}</td>
+          {% if can_update_uat_technical %}
+          <td>
+            <details>
+              <summary class="btn btn-secondary btn-sm">Güncelle</summary>
+              <form method="post" style="margin-top:.5rem;min-width:16rem;">
+                {% csrf_token %}
+                <input type="hidden" name="uat_id" value="{{ uat.pk }}">
+                <div class="form-group">
+                  <label class="form-label">Kök Neden Notu</label>
+                  <textarea name="root_cause_note" class="form-control" rows="2">{{ uat.root_cause_note }}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Teknik Çözüm Notu</label>
+                  <textarea name="resolution_note" class="form-control" rows="2">{{ uat.resolution_note }}</textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Tekrar Test Durumu</label>
+                  <select name="retest_status" class="form-control">
+                    <option value="">Seçiniz</option>
+                    {% for value, label in uat_technical_form.fields.retest_status.choices %}
+                    {% if value %}<option value="{{ value }}" {% if uat.retest_status == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Sonuç Durumu</label>
+                  <select name="result_status" class="form-control">
+                    <option value="">Seçiniz</option>
+                    {% for value, label in uat_technical_form.fields.result_status.choices %}
+                    {% if value %}<option value="{{ value }}" {% if uat.result_status == value %}selected{% endif %}>{{ label }}</option>{% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Kaydet</button>
+              </form>
+            </details>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="{% if can_update_uat_technical %}11{% else %}10{% endif %}" class="empty-state">Teknik UAT bulgusu bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="section-note">UAT kaydı oluşturma ve genel düzenleme Talep Yönetimi ekranında Proje Yöneticisi tarafından yapılır.</p>
+{% endblock %}

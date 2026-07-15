@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Onay Bekleniyor</h1>
+    <p class="subtitle">Hesabınız inceleniyor</p>
+    <p class="desc">Kayıt başvurunuz sistem yöneticisine iletildi. Onay tamamlandığında giriş yapabilirsiniz.</p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-primary" style="width:100%;text-align:center;">Giriş Sayfasına Dön</a>
+  </div>
+</div>
+{% endblock %}

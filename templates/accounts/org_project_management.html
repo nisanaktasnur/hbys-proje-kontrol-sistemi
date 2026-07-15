@@ -1,0 +1,105 @@
+{% extends "app_base.html" %}
+{% block title %}Kurum ve Proje Yönetimi — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+
+<div class="page-header">
+  <h2>Kurum ve Proje Yönetimi</h2>
+  <p>Hastane ve proje seçin; proje bazlı rol atamalarını yönetin.</p>
+</div>
+
+{% if organizations %}
+<div class="card">
+  <div class="card-header">Hastane / Kurum Seçimi</div>
+  <div class="card-body">
+    {% if organizations|length > 1 %}
+    <form method="get" style="display:flex;gap:.75rem;align-items:center;">
+      <select name="org" class="form-control" style="max-width:22rem;margin:0;" onchange="this.form.submit();">
+        {% for org_item in organizations %}
+        <option value="{{ org_item.id }}" {% if organization.id == org_item.id %}selected{% endif %}>{{ org_item.name }}</option>
+        {% endfor %}
+      </select>
+      {% if selected_project %}
+      <input type="hidden" name="project" value="{{ selected_project.id }}">
+      {% endif %}
+    </form>
+    {% elif organization %}
+    <p style="margin:0;font-size:.875rem;">Aktif kurum: <strong>{{ organization.name }}</strong></p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% if organization %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Projeler — {{ organization.name }}</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Proje</th><th>Durum</th><th>Müşteri / Birim</th><th>İşlem</th></tr>
+      </thead>
+      <tbody>
+        {% for project in projects %}
+        <tr {% if selected_project and selected_project.id == project.id %}style="background:var(--surface-muted,#f8fafc);"{% endif %}>
+          <td>{{ project.name }}</td>
+          <td>{{ project.status }}</td>
+          <td>{{ project.client_name|default:"—" }}</td>
+          <td>
+            <a href="?org={{ organization.id }}&project={{ project.id }}" class="btn btn-secondary btn-sm">Proje Rol Atamaları</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty-state">Proje kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if selected_project %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Proje Rol Atamaları — {{ selected_project.name }}</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Kullanıcı</th><th>Ad Soyad</th><th>Mevcut Proje Rolü</th><th>Yeni Rol</th></tr>
+      </thead>
+      <tbody>
+        {% for row in org_members_with_project_role %}
+        {% with m=row.membership %}
+        <tr>
+          <td>{{ m.user.username }}</td>
+          <td>{% if m.user.profile %}{{ m.user.profile.full_name }}{% else %}—{% endif %}</td>
+          <td>{{ row.project_role }}</td>
+          <td>
+            <form method="post" style="display:flex;gap:.5rem;align-items:center;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="assign_project_role">
+              <input type="hidden" name="organization_id" value="{{ organization.id }}">
+              <input type="hidden" name="project_id" value="{{ selected_project.id }}">
+              <input type="hidden" name="user_id" value="{{ m.user.id }}">
+              <select name="role" class="form-control" style="max-width:14rem;">
+                {% for value, label in roles %}
+                <option value="{{ value }}" {% if row.project_role == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-secondary btn-sm">Ata</button>
+            </form>
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr><td colspan="4" class="empty-state">Kurum kullanıcısı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<p class="section-note" style="margin-top:1rem;">Proje rol atamalarını görüntülemek için yukarıdaki listeden bir proje seçin.</p>
+{% endif %}
+
+{% else %}
+<p class="empty-state">Erişilebilir kurum bulunmuyor.</p>
+{% endif %}
+{% endblock %}

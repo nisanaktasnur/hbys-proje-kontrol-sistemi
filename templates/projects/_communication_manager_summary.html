@@ -1,0 +1,48 @@
+{% if communication_summary %}
+<div class="card" style="margin-bottom:1.5rem;">
+  <div class="card-header">Gönderilen İletişim Özeti</div>
+  <div class="card-body">
+    <div class="kpi-grid kpi-grid-compact" style="margin-bottom:1rem;">
+      <div class="kpi-card">
+        <div class="kpi-label">Gönderilen Mesaj</div>
+        <div class="kpi-value">{{ communication_summary.sent_message_count }}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Bekleyen Talimat</div>
+        <div class="kpi-value">{{ communication_summary.pending_sent_instruction_count }}</div>
+      </div>
+    </div>
+    {% if communication_summary.recent_sent %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tür</th>
+            <th>Başlık</th>
+            <th>Alıcı</th>
+            <th>Durum</th>
+            <th>Tarih</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in communication_summary.recent_sent %}
+          <tr class="comm-row" onclick="window.location='{% url 'projects:communication_detail' item.pk %}';">
+            <td>{{ item.communication_type }}</td>
+            <td><a href="{% url 'projects:communication_detail' item.pk %}">{{ item.title|truncatechars:40 }}</a></td>
+            <td>{% if item.recipient_user %}{{ item.recipient_user.username }}{% else %}{{ item.recipient_role|default:"—" }}{% endif %}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.created_at|date:"d.m.Y H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="section-note">Henüz gönderilmiş iletişim kaydı bulunmuyor.</p>
+    {% endif %}
+    <p style="margin-top:.75rem;margin-bottom:0;">
+      <a href="{% url 'projects:communication_center' %}" class="btn btn-secondary btn-sm">İletişim Merkezine Git</a>
+    </p>
+  </div>
+</div>
+{% endif %}

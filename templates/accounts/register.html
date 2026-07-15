@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Kayıt Ol</h1>
+    <p class="subtitle">Proje Karar Destek Platformu</p>
+    <p class="desc">Kayıt başvurunuz sistem yöneticisi onayından sonra aktifleştirilecektir.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="alert alert-error" style="margin-top:.25rem;">{{ field.errors.0 }}</div>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="width:100%;">Başvuru Gönder</button>
+    </form>
+    <p style="margin-top:1rem;font-size:.875rem;text-align:center;">
+      <a href="{% url 'accounts:login' %}">Giriş sayfasına dön</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

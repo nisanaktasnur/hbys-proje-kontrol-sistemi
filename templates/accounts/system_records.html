@@ -1,0 +1,142 @@
+{% extends "app_base.html" %}
+{% block title %}Sistem Kayıtları — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Sistem Kayıtları</h2>
+  <p>Denetim kayıtları, kullanım istatistikleri ve rol dağılımını izleyin.</p>
+</div>
+
+<div class="action-bar" style="margin-bottom:1.5rem;display:flex;flex-wrap:wrap;gap:.75rem;">
+  <a href="{% url 'reports:export_usage_30' %}" class="btn btn-secondary">Son 30 Gün Sistem Özeti CSV</a>
+  <a href="{% url 'reports:export_usage_monthly' %}" class="btn btn-secondary">Yıllık Aylık Kullanım CSV</a>
+  <a href="{% url 'reports:export_audit' %}" class="btn btn-secondary">Sistem İşlem Kayıtları CSV</a>
+</div>
+
+{% if usage_summary %}
+<h3 class="subsection-title">Son 30 Gün Kullanım Özeti</h3>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Toplam İşlem</div><div class="kpi-value">{{ usage_summary.total_actions }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Aktif Kullanıcı</div><div class="kpi-value">{{ usage_summary.unique_users }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">İzleme Dönemi</div><div class="kpi-value kpi-value-sm">{{ usage_summary.period_days }} gün</div></div>
+</div>
+
+<div class="grid-2" style="margin-top:1rem;">
+  <div class="card">
+    <div class="card-header">En Sık İşlemler</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for item in usage_summary.top_actions %}
+        <li>{{ item.action }} — {{ item.count }}</li>
+        {% empty %}
+        <li class="empty-state">Kayıt bulunmuyor.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">En Aktif Kullanıcılar</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for item in usage_summary.top_users %}
+        <li>{{ item.user__profile__full_name|default:item.user__username }} — {{ item.count }} işlem</li>
+        {% empty %}
+        <li class="empty-state">Kayıt bulunmuyor.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if monthly_usage %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Aylık Sistem Kullanımı</div>
+  <div class="card-body">
+    <canvas id="usageChart" height="200"></canvas>
+  </div>
+</div>
+{% endif %}
+
+<h3 class="subsection-title">Rol Dağılımı</h3>
+<div class="kpi-grid">
+  {% for item in role_distribution %}
+  <div class="kpi-card">
+    <div class="kpi-label">{{ item.role }}</div>
+    <div class="kpi-value">{{ item.count }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Son Sistem İşlemleri</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Tarih</th><th>Kullanıcı</th><th>İşlem</th><th>Proje</th><th>Detay</th></tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td>{{ log.created_at|date:"d.m.Y H:i" }}</td>
+          <td>{% if log.user %}{% if log.user.profile %}{{ log.user.profile.full_name }}{% else %}{{ log.user.username }}{% endif %}{% else %}—{% endif %}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.project.name|default:"—" }}</td>
+          <td>{{ log.details|truncatechars:60|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Denetim kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Son Kayıt Başvuruları</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Tarih</th><th>Kullanıcı</th><th>Ad Soyad</th><th>Onay Durumu</th></tr>
+      </thead>
+      <tbody>
+        {% for profile in recent_registrations %}
+        <tr>
+          <td>{{ profile.created_at|date:"d.m.Y" }}</td>
+          <td>{{ profile.user.username }}</td>
+          <td>{{ profile.full_name }}</td>
+          <td>{{ profile.approval_status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="empty-state">Kayıt başvurusu bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if monthly_usage %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('usageChart'), {
+  type: 'bar',
+  data: {
+    labels: {{ monthly_usage_labels_json|safe }},
+    datasets: [{
+      label: 'İşlem Sayısı',
+      data: {{ monthly_usage_values_json|safe }},
+      backgroundColor: '#DCE6F0',
+      borderColor: '#D9E1E8',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

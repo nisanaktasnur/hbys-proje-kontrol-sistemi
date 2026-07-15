@@ -1,0 +1,114 @@
+{% extends "app_base.html" %}
+{% block title %}Yönetici Paneli — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Yönetici Paneli</h2>
+  <p>Proje durumunu stratejik düzeyde salt okunur olarak izleyin.</p>
+</div>
+
+{% include "projects/_pending_instructions.html" %}
+{% include "projects/_communication_manager_summary.html" %}
+
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">Genel Proje Durumu</div>
+    <div class="kpi-value kpi-value-sm">{{ project_status }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Canlı Geçiş Kararı</div>
+    <div class="kpi-value kpi-value-sm">{{ go_live_decision }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Kritik Risk Sayısı</div>
+    <div class="kpi-value">{{ critical_risk_count }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Açık Talep</div>
+    <div class="kpi-value">{{ open_count }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Yüksek Riskli Talep</div>
+    <div class="kpi-value">{{ high_risk_requests }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Hedef Tarihi Geçen</div>
+    <div class="kpi-value">{{ overdue_requests }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Açık UAT Bulgusu</div>
+    <div class="kpi-value">{{ blocking_uat }}</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Canlı Geçiş Hazırlığı</div>
+    <div class="kpi-value kpi-value-sm">{{ go_live_status }}</div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Stratejik Değerlendirme Notları</div>
+  <div class="card-body">
+    <ul class="plain-list">
+      {% for note in strategic_notes %}
+      <li>{{ note }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top:1.5rem;">
+  <div class="card">
+    <div class="card-header">Kritik Proje Riskleri</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Risk</th><th>Seviye</th><th>Hedef Tarih</th></tr></thead>
+        <tbody>
+          {% for risk in top_project_risks %}
+          <tr>
+            <td>{{ risk.title|truncatechars:50 }}</td>
+            <td><span class="risk-badge risk-{{ risk.risk_level|lower }}">{{ risk.risk_level }}</span></td>
+            <td>{{ risk.due_date|date:"d.m.Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="empty-state">Kritik risk kaydı bulunmuyor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Bekleyen Karar Destek Aksiyonları</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Başlık</th><th>Öncelik</th><th>Hedef Tarih</th></tr></thead>
+        <tbody>
+          {% for decision in priority_decisions %}
+          <tr>
+            <td>{{ decision.title|truncatechars:50 }}</td>
+            <td>{{ decision.priority }}</td>
+            <td>{{ decision.due_date|date:"d.m.Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="empty-state">Bekleyen karar aksiyonu bulunmuyor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if team_workload %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Ekip İş Yükü (Açık Talepler)</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Ekip</th><th>Açık Talep</th></tr></thead>
+      <tbody>
+        {% for row in team_workload %}
+        <tr><td>{{ row.responsible_team }}</td><td>{{ row.count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

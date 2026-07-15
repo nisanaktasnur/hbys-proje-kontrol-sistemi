@@ -1,0 +1,110 @@
+{% extends "app_base.html" %}
+{% block title %}{{ request_record.record_number }} — Talep Detayı{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>{{ request_record.title }}</h2>
+  <p>{{ request_record.record_number }} · {{ request_record.process_area }}</p>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">Talep Bilgileri</div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Açıklama</dt><dd>{{ request_record.description }}</dd>
+        <dt>Geri Bildirim Kaynağı</dt><dd>{{ request_record.feedback_source }}</dd>
+        <dt>Öncelik</dt><dd>{{ request_record.priority }}</dd>
+        <dt>Durum</dt><dd>{{ request_record.status }}</dd>
+        <dt>Sorumlu Ekip</dt><dd>{{ request_record.responsible_team }}</dd>
+        <dt>Sorumlu Kullanıcı</dt>
+        <dd>
+          {% if request_record.owner %}
+            {% if request_record.owner.profile %}{{ request_record.owner.profile.full_name }}{% else %}{{ request_record.owner.username }}{% endif %}
+          {% else %}—{% endif %}
+        </dd>
+        <dt>Hedef Kapanış Tarihi</dt><dd>{{ request_record.due_date|date:"d.m.Y"|default:"—" }}</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Sistem Değerlendirmesi</div>
+    <div class="card-body">
+      <dl class="detail-list">
+        <dt>Risk Seviyesi</dt>
+        <dd><span class="risk-badge risk-{{ request_record.risk_level|lower }}">{{ request_record.risk_level }}</span></dd>
+        <dt>Canlı Geçiş Etkisi</dt><dd>{{ request_record.go_live_impact }}</dd>
+        <dt>Sistem Değerlendirme Notu</dt><dd>{{ request_record.evaluation_note|default:"—" }}</dd>
+        <dt>Değerlendirmede Etkili Unsurlar</dt>
+        <dd>
+          {% if request_record.evaluated_factors %}
+          <ul class="plain-list">
+            {% for f in request_record.evaluated_factors %}
+            <li>{{ f.unsur }}: {{ f.deger }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}—{% endif %}
+        </dd>
+        <dt>Önerilen Aksiyon</dt><dd>{{ request_record.recommended_action|default:"—" }}</dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
+{% if can_edit_request %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Talep Güncelle</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="management">
+      <div class="form-grid">
+        {% for field in edit_form %}
+        <div class="form-group {% if field.name == 'description' %}full-width{% endif %}">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">Kaydet</button>
+    </form>
+  </div>
+</div>
+{% elif can_update_technical_fields %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Teknik Alan Güncelle</div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="technical">
+      <div class="form-grid">
+        {% for field in technical_form %}
+        <div class="form-group {% if field.name == 'recommended_action' or field.name == 'evaluation_note' %}full-width{% endif %}">
+          <label class="form-label">{{ field.label }}</label>
+          {{ field }}
+        </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="btn btn-primary">Kaydet</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Aktivite Geçmişi</div>
+  <div class="card-body">
+    <ul class="activity-list">
+      {% for act in request_record.activities.all %}
+      <li>
+        <span class="activity-date">{{ act.created_at|date:"d.m.Y H:i" }}</span>
+        <strong>{{ act.action }}</strong>
+        {% if act.details %} — {{ act.details }}{% endif %}
+      </li>
+      {% empty %}
+      <li class="empty-state">Aktivite kaydı yok.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+<p style="margin-top:1rem;"><a href="{% url 'projects:request_management' %}">← Talep Yönetimine Dön</a></p>
+{% endblock %}

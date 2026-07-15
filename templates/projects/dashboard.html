@@ -1,0 +1,322 @@
+{% extends "app_base.html" %}
+{% block title %}Genel Görünüm — HBYS Proje Kontrol Sistemi{% endblock %}
+{% block content %}
+{% include "projects/_context_header.html" %}
+{% include "projects/_pending_instructions.html" %}
+{% if dashboard_mode == "project_manager" %}
+{% include "projects/_communication_inbox_summary.html" %}
+{% endif %}
+<div class="page-header">
+  <h2>Genel Görünüm</h2>
+  {% if dashboard_mode == "admin" %}
+  <p>Sistem düzeyinde salt okunur özet; hesap, kurum ve proje durumunu izleyin.</p>
+  {% elif dashboard_mode == "executive" %}
+  <p>Proje durumunu stratejik düzeyde salt okunur olarak izleyin.</p>
+  {% else %}
+  <p>HBYS uygulama projesinin güncel durumunu tek ekranda izleyin.</p>
+  {% endif %}
+</div>
+
+{% if dashboard_mode == "admin" %}
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Onay Bekleyen Kullanıcı</div><div class="kpi-value">{{ pending_users|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Aktif Kullanıcı</div><div class="kpi-value">{{ active_users|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Pasif Kullanıcı</div><div class="kpi-value">{{ inactive_users|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Aktif Kurum</div><div class="kpi-value">{{ active_orgs|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Aktif Proje</div><div class="kpi-value">{{ active_projects|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Son Sistem İşlemleri</div><div class="kpi-value">{{ recent_audit|length }}</div></div>
+</div>
+<div class="grid-2" style="margin-top:1.5rem;">
+  <div class="card">
+    <div class="card-header">Rol Dağılımı</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for item in role_distribution %}
+        <li>{{ item.role }} — {{ item.count }}</li>
+        {% empty %}
+        <li class="empty-state">Kayıt bulunmuyor.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Onay Bekleyen Başvurular</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for profile in pending_profiles %}
+        <li>{{ profile.full_name }} ({{ profile.user.username }})</li>
+        {% empty %}
+        <li class="empty-state">Onay bekleyen başvuru yok.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Son Sistem İşlemleri</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Tarih</th><th>İşlem</th><th>Detay</th></tr></thead>
+      <tbody>
+        {% for log in recent_audit %}
+        <tr>
+          <td>{{ log.created_at|date:"d.m.Y H:i" }}</td>
+          <td>{{ log.action }}</td>
+          <td>{{ log.details|truncatechars:60|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="empty-state">Denetim kaydı bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% elif dashboard_mode == "project_manager" %}
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Bugün Takip Edilecek Talepler</div><div class="kpi-value">{{ today_follow_up|length }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Hedef Tarihi Geçen Kayıt</div><div class="kpi-value">{{ overdue_records|length }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Riskli Talepler</div><div class="kpi-value">{{ high_risk_requests|length }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Açık UAT Bulguları</div><div class="kpi-value">{{ open_uat_findings|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Canlı Geçiş Hazırlığı</div><div class="kpi-value kpi-value-sm">{{ go_live_status|default:"—" }}</div></div>
+</div>
+
+{% elif dashboard_mode == "executive" %}
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Genel Proje Durumu</div><div class="kpi-value kpi-value-sm">{{ project_status|default:"—" }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Açık Talep</div><div class="kpi-value">{{ open_count|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Yüksek Riskli Talep</div><div class="kpi-value">{{ high_risk|default:0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Canlı Geçiş Durumu</div><div class="kpi-value kpi-value-sm">{{ go_live_status|default:"—" }}</div></div>
+</div>
+{% if top_risks %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">En Önemli Üç Risk</div>
+  <div class="card-body">
+    <ul class="plain-list">
+      {% for risk in top_risks %}
+      <li>{{ risk.title }} — {{ risk.risk_level }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-label">Toplam Açık Talep</div>
+    <div class="kpi-value">{{ open_count|default:0 }}</div>
+    <p class="kpi-note">{{ kpi_explanations.open_count }}</p>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Yüksek Riskli Talep</div>
+    <div class="kpi-value">{{ high_risk|default:0 }}</div>
+    <p class="kpi-note">{{ kpi_explanations.high_risk }}</p>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Hedef Tarihi Geçen Kayıt</div>
+    <div class="kpi-value">{{ overdue|default:0 }}</div>
+    <p class="kpi-note">{{ kpi_explanations.overdue }}</p>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Canlı Geçiş Durumu</div>
+    <div class="kpi-value kpi-value-sm">{{ overall_status|default:"—" }}</div>
+    <p class="kpi-note">{{ kpi_explanations.overall_status }}</p>
+  </div>
+</div>
+{% endif %}
+
+{% if not read_only_dashboard and dashboard_mode != "admin" and dashboard_mode != "project_manager" %}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header">Bu Ekran Hangi Kararları Destekler?</div>
+  <div class="card-body">
+    <ul class="plain-list compact-list">
+      {% for item in dashboard_decisions %}
+      <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+
+{% if dashboard_mode != "admin" %}
+<div class="grid-2" style="margin-top:1.5rem;">
+  <div class="card">
+    <div class="card-header">Risk Dağılımı</div>
+    <div class="card-body">
+      <canvas id="riskChart" height="200"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Canlı Geçiş Hazırlığı</div>
+    <div class="card-body">
+      {% if readiness %}
+      <dl class="readiness-list">
+        <dt>Eğitim Durumu</dt><dd>{{ readiness.education_status }}</dd>
+        <dt>UAT Durumu</dt><dd>{{ readiness.uat_status }}</dd>
+        <dt>Veri Aktarımı</dt><dd>{{ readiness.data_migration_status }}</dd>
+        <dt>Yetkilendirme Kontrolü</dt><dd>{{ readiness.authorization_status }}</dd>
+        <dt>Kritik Açık Kayıt</dt><dd>{{ readiness.critical_open_request_status }}</dd>
+        <dt>Genel Durum</dt><dd>{{ readiness.overall_status }}</dd>
+        <dt>Önerilen Sonraki Adım</dt><dd>{{ readiness.recommended_next_step|default:"—" }}</dd>
+      </dl>
+      {% else %}
+      <p class="empty-state">Canlı geçiş kaydı bulunmuyor.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if uat_summary and dashboard_mode != "admin" %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">UAT Sonuçları</div>
+  <div class="card-body">
+    <div class="kpi-grid kpi-grid-compact">
+      <div class="kpi-card"><div class="kpi-label">Toplam UAT Senaryosu</div><div class="kpi-value">{{ uat_summary.total }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Başarılı Senaryo</div><div class="kpi-value">{{ uat_summary.successful }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Başarısız Senaryo</div><div class="kpi-value">{{ uat_summary.failed }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Bloke Senaryo</div><div class="kpi-value">{{ uat_summary.blocked }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Tekrar Test Bekleyen</div><div class="kpi-value">{{ uat_summary.retest }}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Yüksek Önemli Açık UAT</div><div class="kpi-value">{{ uat_summary.high_open }}</div></div>
+    </div>
+    <p class="section-note">Tamamlanma: %{{ uat_summary.completion_pct }} — {{ uat_note }}</p>
+  </div>
+</div>
+{% endif %}
+
+{% if dashboard_mode == "project_manager" and priority_follow_list %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Öncelikli Takip Listesi</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr><th>Kayıt No</th><th>Başlık</th><th>Risk</th><th>Hedef Tarih</th><th>Durum</th></tr>
+      </thead>
+      <tbody>
+        {% for req in priority_follow_list %}
+        <tr>
+          <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+          <td>{{ req.title|truncatechars:45 }}</td>
+          <td><span class="risk-badge risk-{{ req.risk_level|lower }}">{{ req.risk_level }}</span></td>
+          <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+          <td>{{ req.status }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="empty-state">Öncelikli kayıt bulunmuyor.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if dashboard_mode == "project_manager" %}
+<div class="grid-2" style="margin-top:1.5rem;">
+  <div class="card">
+    <div class="card-header">Sorumlu Ekiplere Göre İş Yükü</div>
+    <div class="card-body">
+      <ul class="plain-list">
+        {% for t in team_workload %}
+        <li>{{ t.responsible_team }} — {{ t.count }} açık kayıt</li>
+        {% empty %}
+        <li class="empty-state">Kayıt bulunmuyor.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Yaklaşan Hedef Tarihler</div>
+    <div class="card-body table-wrap">
+      <table class="data-table">
+        <thead><tr><th>Kayıt No</th><th>Başlık</th><th>Hedef Tarih</th></tr></thead>
+        <tbody>
+          {% for req in upcoming_due %}
+          <tr>
+            <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+            <td>{{ req.title|truncatechars:40 }}</td>
+            <td>{{ req.due_date|date:"d.m.Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="empty-state">Kayıt bulunmuyor.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if recent_requests and dashboard_mode != "admin" %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Son Oluşturulan Talepler</div>
+  <div class="card-body table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kayıt No</th>
+          <th>Talep Başlığı</th>
+          <th>Durum</th>
+          <th>Risk Seviyesi</th>
+          <th>Sorumlu Ekip</th>
+          <th>Hedef Tarih</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in recent_requests %}
+        <tr>
+          <td><a href="{% url 'projects:request_detail' req.pk %}">{{ req.record_number }}</a></td>
+          <td>{{ req.title|truncatechars:50 }}</td>
+          <td><span class="badge">{{ req.status }}</span></td>
+          <td><span class="risk-badge risk-{{ req.risk_level|lower }}">{{ req.risk_level }}</span></td>
+          <td>{{ req.responsible_team }}</td>
+          <td>{{ req.due_date|date:"d.m.Y"|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="empty-state">Henüz talep kaydı yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if process_attention and dashboard_mode != "admin" and dashboard_mode != "project_manager" %}
+<div class="card" style="margin-top:1.5rem;">
+  <div class="card-header">Dikkat Gerektiren Süreçler</div>
+  <div class="card-body">
+    <ul class="plain-list">
+      {% for p in process_attention %}
+      <li>{{ p.process_area }} — {{ p.count }} açık kayıt</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if dashboard_mode != "admin" %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('riskChart'), {
+  type: 'bar',
+  data: {
+    labels: ["Düşük", "Orta", "Yüksek"],
+    datasets: [{
+      label: 'Kayıt Sayısı',
+      data: [{{ risk_chart.values.0|default:0 }}, {{ risk_chart.values.1|default:0 }}, {{ risk_chart.values.2|default:0 }}],
+      backgroundColor: ['#E8F0EC', '#F3EEE3', '#F3E7E7'],
+      borderColor: ['#D9E1E8', '#D9E1E8', '#D9E1E8'],
+      borderWidth: 1
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}
